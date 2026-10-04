@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Isla Perdida 3D HD | Game Survival Pulau Terdampar First-Person & Tim SAR</title>
+  <meta name="description" content="Game survival 3D First-Person HD: Grafis detail dengan rumput 3D, pohon kelapa berdaun lebat, deburan ombak laut, berburu hewan, bertahan dari lapar dan dingin hingga helikopter Tim SAR datang!">
+
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Fullscreen 3D WebGL Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Screen Vignette Effects (Damage Flash & Frost Hypothermia) -->
+  <div id="damage-vignette" class="screen-vignette vignette-damage"></div>
+  <div id="frost-vignette" class="screen-vignette vignette-frost"></div>
+
+  <!-- Center Crosshair & Context Action Prompt -->
+  <div id="crosshair-wrapper" class="crosshair-wrapper">
+    <div id="crosshair" class="crosshair">
+      <div class="ch-dot"></div>
+      <div class="ch-line ch-top"></div>
+      <div class="ch-line ch-bottom"></div>
+      <div class="ch-line ch-left"></div>
+      <div class="ch-line ch-right"></div>
+    </div>
+    <div id="crosshair-prompt" class="crosshair-prompt" style="display: none;"></div>
+  </div>
+
+  <!-- Action Feed Text Banner (Item pickups, damage notifications) -->
+  <div id="action-feed-text" class="action-feed-text"></div>
+
+  <!-- ============================================================ -->
+  <!-- HUD INTERFACE (HEADS-UP DISPLAY) -->
+  <!-- ============================================================ -->
+  <div id="game-hud" class="game-hud">
+    
+    <!-- Top Center: Navigational Compass Ribbon -->
+    <div class="hud-compass-container">
+      <div class="compass-viewport">
+        <div class="compass-marker">▼</div>
+        <div id="compass-ribbon" class="compass-ribbon"></div>
+      </div>
+      <div class="compass-sub-info">
+        <span id="compass-heading-text" class="compass-degrees font-mono">0° N (Utara)</span>
+      </div>
+    </div>
+
+    <!-- Top Left: Survival Vitals Gauges -->
+    <div class="hud-vitals-card">
+      <div class="vitals-header">
+        <span class="vitals-title">KONDISI TUBUH</span>
+        <span class="vitals-status-dot"></span>
+      </div>
+
+      <!-- Health Bar -->
+      <div class="vital-row vital-hp" title="Darah / Kesehatan: Pulih jika kebutuhan terpenuhi & setelah tidur">
+        <div class="vital-icon-wrap icon-hp">❤️</div>
+        <div class="vital-bar-track">
+          <div class="vital-bar-fill fill-hp" id="bar-hp" style="width: 100%;"></div>
+        </div>
+        <span class="vital-value font-mono" id="text-hp">100 / 100</span>
+      </div>
+
+      <!-- Hunger Bar -->
+      <div class="vital-row vital-hunger" title="Kelaparan: Makan buah beri, kelapa, atau daging panggang">
+        <div class="vital-icon-wrap icon-hunger">🍗</div>
+        <div class="vital-bar-track">
+          <div class="vital-bar-fill fill-hunger" id="bar-hunger" style="width: 100%;"></div>
+        </div>
+        <span class="vital-label">Lapar</span>
+      </div>
+
+      <!-- Thirst Bar -->
+      <div class="vital-row vital-thirst" title="Kehausan: Minum dari danau air tawar di tengah pulau atau air kelapa">
+        <div class="vital-icon-wrap icon-thirst">💧</div>
+        <div class="vital-bar-track">
+          <div class="vital-bar-fill fill-thirst" id="bar-thirst" style="width: 100%;"></div>
+        </div>
+        <span class="vital-label">Haus</span>
+      </div>
+
+      <!-- Warmth / Temperature Bar -->
+      <div class="vital-row vital-warmth" title="Suhu Tubuh: Malam hari sangat dingin! Buat api unggun, obor, atau gubuk agar tidak hipotermia">
+        <div class="vital-icon-wrap icon-warmth">🌡️</div>
+        <div class="vital-bar-track">
+          <div class="vital-bar-fill fill-warmth" id="bar-warmth" style="width: 100%;"></div>
+        </div>
+        <span class="vital-label">Hangat</span>
+      </div>
+
+      <!-- Stamina Bar -->
+      <div class="vital-row vital-stamina" title="Stamina: Digunakan untuk lari cepat (Shift) dan melompat (Spasi)">
+        <div class="vital-icon-wrap icon-stamina">⚡</div>
+        <div class="vital-bar-track">
+          <div class="vital-bar-fill fill-stamina" id="bar-stamina" style="width: 100%;"></div>
+        </div>
+        <span class="vital-label">Stamina</span>
+      </div>
+    </div>
+
+    <!-- Top Right: SAR Rescue Mission Banner & Time Gadget -->
+    <div class="hud-top-right">
+      <!-- SAR Mission Status -->
+      <div class="hud-sar-banner">
+        <div class="sar-header">
+          <span class="sar-radar-pulse"></span>
+          <span class="sar-title">MISI EVAKUASI TIM SAR 3D</span>
+        </div>
+        <div class="sar-progress-track">
+          <div class="sar-progress-fill" id="sar-progress-bar" style="width: 20%;"></div>
+        </div>
+        <div class="sar-subtext" id="sar-status-text">
+          Pencarian Standar SAR: ~5 Hari Lagi (Tip: Buat Api Sinyal SOS di pantai selatan)
+        </div>
+      </div>
+
+      <!-- Clock & Survival Time Card -->
+      <div class="hud-time-card">
+        <div class="hud-time-top">
+          <span class="time-clock font-mono" id="hud-clock">Hari 1 • 07:00 WIB</span>
+        </div>
+        <div class="hud-actions-row">
+          <button id="btn-open-crafting" class="btn-hud-craft" title="Buka Menu Pembuatan [C]">🔨 Crafting [C]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Center: 9-Slot Dedicated Hotbar -->
+    <div class="hud-hotbar-wrapper">
+      <div class="hotbar-slots" id="hotbar-slots">
+        <!-- Injected dynamically with slots 1 through 9 -->
+      </div>
+      <div class="hotbar-hint">Tekan [1] s/d [9] atau Scroll Mouse untuk Memilih • Klik Kiri untuk Menggunakan</div>
+    </div>
+
+    <!-- Controls Floating Helper Pill (Bottom Left) -->
+    <div class="hud-controls-helper">
+      <div class="ctrl-header">KONTROL FIRST-PERSON</div>
+      <div class="ctrl-grid">
+        <span><strong>W, A, S, D</strong> Gerak 3D</span>
+        <span><strong>Shift</strong> Lari Cepat</span>
+        <span><strong>Spasi</strong> Lompat</span>
+        <span><strong>Klik Kiri</strong> Pukul/Tebang/Serang</span>
+        <span><strong>E</strong> Minum/Tidur/Ambil</span>
+        <span><strong>1 s/d 9</strong> Ganti Slot Hotbar</span>
+        <span><strong>C / Tab</strong> Menu Crafting</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: CRAFTING & SURVIVAL MANUAL [C] -->
+  <!-- ============================================================ -->
+  <div id="crafting-modal" class="game-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="header-title-group">
+          <span class="header-tag">3D SURVIVAL MANUAL</span>
+          <h2 class="modal-title">Menu Pembuatan & Kelangsungan Hidup 3D</h2>
+        </div>
+        <button id="btn-close-crafting" class="btn-close-modal">&times;</button>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="craft-tabs">
+        <button class="craft-tab active" data-category="all">Semua Resep</button>
+        <button class="craft-tab" data-category="tools">Peralatan & Senjata</button>
+        <button class="craft-tab" data-category="structures">Bangunan & Tenda</button>
+        <button class="craft-tab" data-category="food">Makanan & Medis</button>
+      </div>
+
+      <!-- Recipes Grid List -->
+      <div class="recipes-list" id="crafting-recipes-list">
+        <!-- Injected dynamically by CraftingSystem -->
+      </div>
+
+      <div class="modal-footer">
+        <span class="tip-text">💡 <strong>Tips Memasak:</strong> Buat Api Unggun, lalu dekati api tersebut untuk memanggang daging mentah menjadi daging lezat berkhasiat tinggi!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: VICTORY / TIM SAR TELAH MENYELAMATKAN ANDA -->
+  <!-- ============================================================ -->
+  <div id="victory-modal" class="game-modal">
+    <div class="modal-card modal-celebrate">
+      <div class="victory-heli-badge">🚁</div>
+      <h2 class="celebrate-title">EVAKUASI TIM SAR BERHASIL!</h2>
+      <p class="celebrate-desc">
+        Helikopter SAR mendarat di pantai pulau terpencil dan membawa Anda pulang dengan selamat! Anda berhasil membuktikan kemampuan bertahan hidup sejati!
+      </p>
+
+      <div class="stats-summary-grid">
+        <div class="summary-box">
+          <span class="s-val" id="stat-days">1</span>
+          <span class="s-label">Hari Bertahan</span>
+        </div>
+        <div class="summary-box">
+          <span class="s-val" id="stat-hunted">0</span>
+          <span class="s-label">Hewan Diburu</span>
+        </div>
+        <div class="summary-box">
+          <span class="s-val" id="stat-trees">0</span>
+          <span class="s-label">Pohon Ditebang</span>
+        </div>
+        <div class="summary-box">
+          <span class="s-val" id="stat-structures">0</span>
+          <span class="s-label">Bangunan Dibuat</span>
+        </div>
+      </div>
+
+      <button class="btn-modal-action btn-restart-game">Main Lagi (Misi Baru)</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: GAME OVER / TEWAS DI PULAU -->
+  <!-- ============================================================ -->
+  <div id="gameover-modal" class="game-modal">
+    <div class="modal-card modal-gameover">
+      <div class="gameover-skull">💀</div>
+      <h2 class="gameover-title">ANDA TIDAK SELAMAT</h2>
+      <p class="gameover-reason" id="death-reason">Penyebab Kematian: Hipotermia Kedinginan</p>
+      <span class="gameover-day" id="death-day">Bertahan hingga Hari ke-1</span>
+
+      <div class="gameover-tips">
+        <strong>Pelajaran untuk Percobaan Berikutnya:</strong>
+        <p>• Perhatikan indikator Lapar dan Haus secara teratur.<br>
+        • Saat malam tiba, nyalakan <strong>Api Unggun</strong> atau tidur di dalam <strong>Gubuk Daun</strong> agar tubuh tetap hangat.<br>
+        • Buat <strong>Tombak Berburu</strong> untuk menyerang hewan liar dari jarak aman.<br>
+        • Buat <strong>Api Sinyal Raksasa SOS</strong> di pantai selatan untuk memanggil Tim SAR lebih cepat!</p>
+      </div>
+
+      <button class="btn-modal-action btn-restart-game">Bangkit & Coba Lagi</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- START SCREEN / INTRO OVERLAY -->
+  <!-- ============================================================ -->
+  <div id="start-screen" class="start-screen-overlay">
+    <div class="start-card">
+      <div class="banner-image-wrapper">
+        <img src="assets/survival_banner.jpg" alt="Pulau Terdampar" class="start-banner-img">
+        <div class="banner-gradient"></div>
+        <div class="banner-badge">3D FIRST-PERSON HD PERSPECTIVE</div>
+      </div>
+
+      <div class="start-content">
+        <h1 class="game-main-title">ISLA PERDIDA: <span class="gradient-orange">SAR RESCUE 3D HD</span></h1>
+        <p class="game-story-intro">
+          Anda terdampar sendirian di pantai pulau terpencil dengan grafis 3D HD yang memukau. Jelajahi hutan tropis yang rimbun dengan hamparan rumput 3D, cari makan & minum, hindari kedinginan, dan tunggu helikopter Tim SAR datang!
+        </p>
+
+        <div class="story-objectives">
+          <div class="obj-item">
+            <span class="obj-icon">👀</span>
+            <div><strong>Kontrol First-Person:</strong> Gerakkan mouse untuk melihat 360°, <strong>WASD</strong> untuk berjalan, <strong>Spasi</strong> untuk melompat, dan <strong>Shift</strong> untuk lari.</div>
+          </div>
+          <div class="obj-item">
+            <span class="obj-icon">🪓</span>
+            <div><strong>Tebang & Tambang:</strong> Arahkan bidikan crosshair ke pohon kelapa atau batu, lalu <strong>Klik Kiri</strong> untuk memanen material.</div>
+          </div>
+          <div class="obj-item">
+            <span class="obj-icon">🔢</span>
+            <div><strong>Hotbar 9-Slot Cepat:</strong> Tekan tombol angka <strong>[1] s/d [9]</strong> pada keyboard untuk langsung mengganti alat atau memakan makanan.</div>
+          </div>
+          <div class="obj-item">
+            <span class="obj-icon">🚁</span>
+            <div><strong>Misi Evakuasi SAR:</strong> Bertahan sampai Hari ke-5 ATAU bangun <strong>Api Sinyal Raksasa SOS</strong> di pantai selatan untuk mempercepat kedatangan Helikopter Tim SAR!</div>
+          </div>
+        </div>
+
+        <button id="btn-start-game" class="btn-start-play">
+          <span>MASUK KE PULAU 3D (FIRST-PERSON) 🌴</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js Library, Textures & Game Scripts in Proper Order -->
+  <script src="js/three.min.js"></script>
+  <script src="js/textures.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/fps-controls.js"></script>
+  <script src="js/world3d.js"></script>
+  <script src="js/entities3d.js"></script>
+  <script src="js/crafting.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
